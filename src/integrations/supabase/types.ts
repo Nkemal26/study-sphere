@@ -359,6 +359,7 @@ export type Database = {
           faculty_id: string | null
           full_name: string
           id: string
+          is_restricted: boolean
           level: string | null
           updated_at: string
         }
@@ -371,6 +372,7 @@ export type Database = {
           faculty_id?: string | null
           full_name?: string
           id: string
+          is_restricted?: boolean
           level?: string | null
           updated_at?: string
         }
@@ -383,6 +385,7 @@ export type Database = {
           faculty_id?: string | null
           full_name?: string
           id?: string
+          is_restricted?: boolean
           level?: string | null
           updated_at?: string
         }
@@ -517,6 +520,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_restricted: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "student" | "lecturer" | "admin"

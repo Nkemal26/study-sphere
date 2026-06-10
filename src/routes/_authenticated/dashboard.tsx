@@ -16,7 +16,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function DashboardPage() {
-  const { user, isLecturer } = useAuth();
+  const { user, isLecturer, isAdmin } = useAuth();
+  const canUpload = isLecturer || isAdmin;
 
   const { data: myNotes } = useQuery({
     queryKey: ["my-notes", user?.id],
@@ -28,7 +29,24 @@ function DashboardPage() {
         .order("created_at", { ascending: false });
       return data ?? [];
     },
-    enabled: !!user,
+    enabled: !!user && canUpload,
+  });
+
+  const myNoteIds = (myNotes ?? []).map((n) => n.id);
+
+  const { data: downloaders } = useQuery({
+    queryKey: ["downloaders", user?.id, myNoteIds.join(",")],
+    queryFn: async () => {
+      if (myNoteIds.length === 0) return [];
+      const { data } = await supabase
+        .from("download_events")
+        .select("created_at,note:notes(id,title),user:profiles!download_events_user_id_fkey(id,full_name,email)")
+        .in("note_id", myNoteIds)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return data ?? [];
+    },
+    enabled: canUpload && myNoteIds.length > 0,
   });
 
   const { data: favorites } = useQuery({
@@ -77,54 +95,89 @@ function DashboardPage() {
 
       <div className="container mx-auto space-y-8 px-4 py-8">
         {/* Stat cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard icon={UploadIcon} label="Your uploads" value={stats.uploads} />
-          <StatCard icon={FileText} label="Approved" value={stats.approved} />
-          <StatCard icon={Clock} label="Pending review" value={stats.pending} />
-          <StatCard icon={Download} label="Total downloads" value={stats.totalDownloads} />
-        </div>
+        {canUpload && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard icon={UploadIcon} label="Your uploads" value={stats.uploads} />
+            <StatCard icon={FileText} label="Approved" value={stats.approved} />
+            <StatCard icon={Clock} label="Pending review" value={stats.pending} />
+            <StatCard icon={Download} label="Total downloads" value={stats.totalDownloads} />
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
-          <Link to="/upload"><Button><UploadIcon className="mr-2 h-4 w-4" /> Upload new notes</Button></Link>
+          {canUpload && (
+            <Link to="/upload"><Button><UploadIcon className="mr-2 h-4 w-4" /> Upload new notes</Button></Link>
+          )}
           <Link to="/browse"><Button variant="outline">Browse all notes</Button></Link>
           <Link to="/favorites"><Button variant="ghost"><Heart className="mr-2 h-4 w-4" /> Favorites</Button></Link>
         </div>
 
-        {/* My uploads */}
-        <section>
-          <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold">
-            <BarChart3 className="h-5 w-5 text-primary" /> Your uploaded notes
-          </h2>
-          {myNotes && myNotes.length > 0 ? (
-            <div className="space-y-2 rounded-xl border bg-card">
-              {myNotes.map((n) => (
-                <Link key={n.id} to="/notes/$id" params={{ id: n.id }} className="flex items-center justify-between gap-3 border-b p-4 last:border-0 hover:bg-muted/40">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{n.title}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        n.status === "approved" ? "bg-success/20 text-success" :
-                        n.status === "rejected" ? "bg-destructive/20 text-destructive" :
-                        "bg-warning/20 text-warning"
-                      }`}>{n.status}</span>
+        {/* My uploads (lecturers/admins) */}
+        {canUpload && (
+          <section>
+            <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold">
+              <BarChart3 className="h-5 w-5 text-primary" /> Your uploaded notes
+            </h2>
+            {myNotes && myNotes.length > 0 ? (
+              <div className="space-y-2 rounded-xl border bg-card">
+                {myNotes.map((n) => (
+                  <Link key={n.id} to="/notes/$id" params={{ id: n.id }} className="flex items-center justify-between gap-3 border-b p-4 last:border-0 hover:bg-muted/40">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{n.title}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          n.status === "approved" ? "bg-success/20 text-success" :
+                          n.status === "rejected" ? "bg-destructive/20 text-destructive" :
+                          "bg-warning/20 text-warning"
+                        }`}>{n.status}</span>
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {n.course?.code} · {n.department?.name} · Level {n.level}
+                      </div>
                     </div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {n.course?.code} · {n.department?.name} · Level {n.level}
+                    <div className="flex shrink-0 items-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Download className="h-3 w-3" /> {n.downloads}</span>
+                      <span>★ {Number(n.average_rating).toFixed(1)}</span>
                     </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Download className="h-3 w-3" /> {n.downloads}</span>
-                    <span>★ {Number(n.average_rating).toFixed(1)}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">
-              You haven't uploaded any notes yet. <Link to="/upload" className="text-primary hover:underline">Upload your first one →</Link>
-            </CardContent></Card>
-          )}
-        </section>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">
+                You haven't uploaded any notes yet. <Link to="/upload" className="text-primary hover:underline">Upload your first one →</Link>
+              </CardContent></Card>
+            )}
+          </section>
+        )}
+
+        {/* Downloaders (lecturers/admins) */}
+        {canUpload && (
+          <section>
+            <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold">
+              <Download className="h-5 w-5 text-primary" /> Students who downloaded your notes
+            </h2>
+            {downloaders && downloaders.length > 0 ? (
+              <div className="space-y-1 rounded-xl border bg-card">
+                {downloaders.map((d, i) => {
+                  const u = (d as { user?: { full_name?: string; email?: string } }).user;
+                  const n = (d as { note?: { title?: string } }).note;
+                  return (
+                    <div key={i} className="flex items-center justify-between gap-3 border-b p-3 last:border-0 text-sm">
+                      <div className="min-w-0">
+                        <div className="font-medium">{u?.full_name || u?.email || "Unknown"}</div>
+                        <div className="truncate text-xs text-muted-foreground">{n?.title}</div>
+                      </div>
+                      <span className="shrink-0 text-xs text-muted-foreground">{new Date(d.created_at).toLocaleString()}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No downloads yet.</p>
+            )}
+          </section>
+        )}
+
 
         {/* Favorites */}
         <section>

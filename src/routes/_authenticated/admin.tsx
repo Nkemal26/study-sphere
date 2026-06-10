@@ -47,7 +47,7 @@ function AdminPage() {
     queryKey: ["admin-users"],
     queryFn: async () => (await supabase
       .from("profiles")
-      .select("id,full_name,email,created_at")
+      .select("id,full_name,email,created_at,is_restricted")
       .order("created_at", { ascending: false })
       .limit(100)).data ?? [],
   });
@@ -97,7 +97,15 @@ function AdminPage() {
     qc.invalidateQueries({ queryKey: ["admin-reports"] });
   };
 
+  const toggleRestrict = async (userId: string, restrict: boolean) => {
+    const { error } = await supabase.from("profiles").update({ is_restricted: restrict }).eq("id", userId);
+    if (error) return toast.error(error.message);
+    toast.success(restrict ? "User restricted" : "Access restored");
+    qc.invalidateQueries({ queryKey: ["admin-users"] });
+  };
+
   const getRoleFor = (uid: string) => allRoles?.find((r) => r.user_id === uid)?.role ?? "student";
+
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -192,19 +200,31 @@ function AdminPage() {
             <Card>
               <CardContent className="divide-y p-0">
                 {(users ?? []).map((u) => (
-                  <div key={u.id} className="flex items-center justify-between gap-3 p-4">
+                  <div key={u.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <div className="font-semibold">{u.full_name || "—"}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{u.full_name || "—"}</span>
+                        {u.is_restricted && <Badge variant="destructive" className="text-[10px]">Restricted</Badge>}
+                      </div>
                       <div className="text-xs text-muted-foreground">{u.email}</div>
                     </div>
-                    <Select value={getRoleFor(u.id)} onValueChange={(v) => setRole(u.id, v as never)}>
-                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="lecturer">Lecturer</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Select value={getRoleFor(u.id)} onValueChange={(v) => setRole(u.id, v as never)}>
+                        <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="student">Student</SelectItem>
+                          <SelectItem value="lecturer">Lecturer</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        variant={u.is_restricted ? "outline" : "destructive"}
+                        onClick={() => toggleRestrict(u.id, !u.is_restricted)}
+                      >
+                        {u.is_restricted ? "Unrestrict" : "Restrict"}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </CardContent>
