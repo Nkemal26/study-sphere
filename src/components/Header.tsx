@@ -13,7 +13,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function Header() {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isLecturer, signOut } = useAuth();
+  const canUpload = isLecturer || isAdmin;
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -38,7 +39,7 @@ export function Header() {
         <nav className="hidden items-center gap-6 md:flex">
           <Link to="/" className={linkCls("/")}>Home</Link>
           <Link to="/browse" className={linkCls("/browse")}>Browse</Link>
-          {user && <Link to="/upload" className={linkCls("/upload")}>Upload</Link>}
+          {user && canUpload && <Link to="/upload" className={linkCls("/upload")}>Upload</Link>}
           {user && <Link to="/dashboard" className={linkCls("/dashboard")}>Dashboard</Link>}
         </nav>
 
@@ -63,9 +64,11 @@ export function Header() {
                 <DropdownMenuItem onClick={() => navigate({ to: "/dashboard" })}>
                   <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: "/upload" })}>
-                  <Upload className="mr-2 h-4 w-4" /> Upload notes
-                </DropdownMenuItem>
+                {canUpload && (
+                  <DropdownMenuItem onClick={() => navigate({ to: "/upload" })}>
+                    <Upload className="mr-2 h-4 w-4" /> Upload notes
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => navigate({ to: "/favorites" })}>
                   <Star className="mr-2 h-4 w-4" /> Favorites
                 </DropdownMenuItem>
