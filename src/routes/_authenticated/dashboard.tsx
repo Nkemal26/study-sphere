@@ -16,7 +16,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function DashboardPage() {
-  const { user, isLecturer } = useAuth();
+  const { user, isLecturer, isAdmin } = useAuth();
+  const canUpload = isLecturer || isAdmin;
 
   const { data: myNotes } = useQuery({
     queryKey: ["my-notes", user?.id],
@@ -28,7 +29,24 @@ function DashboardPage() {
         .order("created_at", { ascending: false });
       return data ?? [];
     },
-    enabled: !!user,
+    enabled: !!user && canUpload,
+  });
+
+  const myNoteIds = (myNotes ?? []).map((n) => n.id);
+
+  const { data: downloaders } = useQuery({
+    queryKey: ["downloaders", user?.id, myNoteIds.join(",")],
+    queryFn: async () => {
+      if (myNoteIds.length === 0) return [];
+      const { data } = await supabase
+        .from("download_events")
+        .select("created_at,note:notes(id,title),user:profiles!download_events_user_id_fkey(id,full_name,email)")
+        .in("note_id", myNoteIds)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return data ?? [];
+    },
+    enabled: canUpload && myNoteIds.length > 0,
   });
 
   const { data: favorites } = useQuery({
