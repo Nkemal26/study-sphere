@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function DashboardPage() {
-  const { user, isLecturer, isAdmin } = useAuth();
+  const { user, isLecturer, isAdmin, isStudent } = useAuth();
   const canUpload = isLecturer || isAdmin;
 
   const { data: myNotes } = useQuery({
@@ -75,6 +75,24 @@ function DashboardPage() {
     enabled: !!user,
   });
 
+  const { data: lecturerDownloads } = useQuery({
+    queryKey: ["lecturer-downloads", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("download_events")
+        .select(`
+          created_at,
+          note:notes!inner(id,title),
+          user:profiles!left(full_name, email)
+        `)
+        .eq("notes.uploaded_by", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return data ?? [];
+    },
+    enabled: !!user && isLecturer,
+  });
+
   const stats = {
     uploads: myNotes?.length ?? 0,
     approved: myNotes?.filter((n) => n.status === "approved").length ?? 0,
@@ -109,7 +127,9 @@ function DashboardPage() {
             <Link to="/upload"><Button><UploadIcon className="mr-2 h-4 w-4" /> Upload new notes</Button></Link>
           )}
           <Link to="/browse"><Button variant="outline">Browse all notes</Button></Link>
-          <Link to="/favorites"><Button variant="ghost"><Heart className="mr-2 h-4 w-4" /> Favorites</Button></Link>
+          {!isStudent && (
+            <Link to="/favorites"><Button variant="ghost"><Heart className="mr-2 h-4 w-4" /> Favorites</Button></Link>
+          )}
         </div>
 
         {/* My uploads (lecturers/admins) */}
@@ -180,18 +200,48 @@ function DashboardPage() {
 
 
         {/* Favorites */}
-        <section>
-          <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold">
-            <Heart className="h-5 w-5 text-primary" /> Your favorites
-          </h2>
-          {favorites && favorites.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {favorites.slice(0, 6).map((n) => <NoteCard key={n.id} note={n} />)}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No favorites yet. Save notes you want to come back to.</p>
-          )}
-        </section>
+        {!isStudent && (
+          <section>
+            <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold">
+              <Heart className="h-5 w-5 text-primary" /> Your favorites
+            </h2>
+            {favorites && favorites.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {favorites.slice(0, 6).map((n) => <NoteCard key={n.id} note={n} />)}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No favorites yet. Save notes you want to come back to.</p>
+            )}
+          </section>
+        )}
+
+        {/* Lecturer specific: Students who downloaded my notes */}
+        {isLecturer && (
+          <section>
+            <h2 className="mb-4 flex items-center gap-2 font-display text-xl font-bold">
+              <Download className="h-5 w-5 text-primary" /> Students who downloaded your notes
+            </h2>
+            {lecturerDownloads && lecturerDownloads.length > 0 ? (
+              <div className="space-y-2 rounded-xl border bg-card">
+                {lecturerDownloads.map((d: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between gap-3 border-b p-4 last:border-0 hover:bg-muted/40">
+                    <div className="min-w-0">
+                      <div className="font-semibold">{d.note?.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Downloaded by: {d.user?.full_name || d.user?.email || "Anonymous Student"}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(d.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No downloads of your notes yet.</p>
+            )}
+          </section>
+        )}
 
         {/* Recently downloaded */}
         <section>

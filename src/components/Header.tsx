@@ -13,7 +13,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function Header() {
-  const { user, isAdmin, isLecturer, signOut } = useAuth();
+  const { user, isAdmin, isLecturer, isStudent, signOut } = useAuth();
   const canUpload = isLecturer || isAdmin;
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -69,9 +69,11 @@ export function Header() {
                     <Upload className="mr-2 h-4 w-4" /> Upload notes
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => navigate({ to: "/favorites" })}>
-                  <Star className="mr-2 h-4 w-4" /> Favorites
-                </DropdownMenuItem>
+                {!isStudent && (
+                  <DropdownMenuItem onClick={() => navigate({ to: "/favorites" })}>
+                    <Star className="mr-2 h-4 w-4" /> Favorites
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => navigate({ to: "/profile" })}>
                   <UserIcon className="mr-2 h-4 w-4" /> Profile
                 </DropdownMenuItem>

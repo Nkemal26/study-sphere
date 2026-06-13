@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 
@@ -41,6 +42,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<"student" | "lecturer" | "admin">("student");
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,11 +53,26 @@ function AuthPage() {
       if (err instanceof z.ZodError) return toast.error(err.issues[0].message);
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message);
+    }
+    
+    // Check if user is admin
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', authData.user.id);
+      
     setLoading(false);
-    if (error) return toast.error(error.message);
     toast.success("Welcome back!");
-    navigate({ to: "/dashboard" });
+    
+    if (roleData?.some(r => r.role === 'admin')) {
+      navigate({ to: "/admin" });
+    } else {
+      navigate({ to: "/dashboard" });
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -68,18 +85,23 @@ function AuthPage() {
       if (err instanceof z.ZodError) return toast.error(err.issues[0].message);
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data: authData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, role },
         emailRedirectTo: `${window.location.origin}/dashboard`,
       },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Account created!");
-    navigate({ to: "/dashboard" });
+    
+    if (role === "admin") {
+      navigate({ to: "/admin" });
+    } else {
+      navigate({ to: "/dashboard" });
+    }
   };
 
   const handleGoogle = async () => {
@@ -136,6 +158,17 @@ function AuthPage() {
                   <div className="space-y-2">
                     <Label htmlFor="su-name">Full name</Label>
                     <Input id="su-name" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Doe" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="su-role">Role</Label>
+                    <Select value={role} onValueChange={(v) => setRole(v as any)}>
+                      <SelectTrigger id="su-role"><SelectValue placeholder="Select your role" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="lecturer">Lecturer</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="su-email">Email</Label>

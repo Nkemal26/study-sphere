@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
+import { useEffect } from "react";
 
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -15,7 +16,14 @@ export const Route = createFileRoute("/_authenticated/favorites")({
 });
 
 function FavoritesPage() {
-  const { user } = useAuth();
+  const { user, isStudent, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && isStudent) {
+      navigate({ to: "/dashboard" });
+    }
+  }, [isStudent, loading, navigate]);
   const { data } = useQuery({
     queryKey: ["favorites-full", user?.id],
     queryFn: async (): Promise<NoteCardData[]> => {

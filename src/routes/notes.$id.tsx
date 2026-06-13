@@ -32,7 +32,7 @@ function NoteDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isStudent } = useAuth();
   const [comment, setComment] = useState("");
   const [reportReason, setReportReason] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
@@ -195,32 +195,38 @@ function NoteDetail() {
 
               <div className="flex flex-wrap gap-2 border-t pt-6">
                 <Button onClick={handleDownload}><Download className="mr-2 h-4 w-4" /> Download</Button>
-                <Button variant={isFav ? "default" : "outline"} onClick={handleFavorite}>
-                  <Heart className={`mr-2 h-4 w-4 ${isFav ? "fill-current" : ""}`} /> {isFav ? "Saved" : "Save"}
-                </Button>
-                <Dialog open={reportOpen} onOpenChange={setReportOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost"><Flag className="mr-2 h-4 w-4" /> Report</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Report this note</DialogTitle>
-                      <DialogDescription>Let admins know what's wrong. We review every report.</DialogDescription>
-                    </DialogHeader>
-                    <Textarea value={reportReason} onChange={(e) => setReportReason(e.target.value)} placeholder="What's the issue?" maxLength={500} />
-                    <DialogFooter>
-                      <Button variant="ghost" onClick={() => setReportOpen(false)}>Cancel</Button>
-                      <Button onClick={handleReport}><ShieldAlert className="mr-2 h-4 w-4" /> Submit report</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                {!isStudent && (
+                  <Button variant={isFav ? "default" : "outline"} onClick={handleFavorite}>
+                    <Heart className={`mr-2 h-4 w-4 ${isFav ? "fill-current" : ""}`} /> {isFav ? "Saved" : "Save"}
+                  </Button>
+                )}
+                {!isStudent && (
+                  <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost"><Flag className="mr-2 h-4 w-4" /> Report</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Report this note</DialogTitle>
+                        <DialogDescription>Let admins know what's wrong. We review every report.</DialogDescription>
+                      </DialogHeader>
+                      <Textarea value={reportReason} onChange={(e) => setReportReason(e.target.value)} placeholder="What's the issue?" maxLength={500} />
+                      <DialogFooter>
+                        <Button variant="ghost" onClick={() => setReportOpen(false)}>Cancel</Button>
+                        <Button onClick={handleReport}><ShieldAlert className="mr-2 h-4 w-4" /> Submit report</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
 
-              <div className="rounded-xl border bg-muted/30 p-5">
-                <h3 className="text-sm font-semibold">Your rating</h3>
-                <p className="mb-3 text-xs text-muted-foreground">Help other students find the best material.</p>
-                <StarRating value={myRating ?? 0} onChange={handleRate} />
-              </div>
+              {!isStudent && (
+                <div className="rounded-xl border bg-muted/30 p-5">
+                  <h3 className="text-sm font-semibold">Your rating</h3>
+                  <p className="mb-3 text-xs text-muted-foreground">Help other students find the best material.</p>
+                  <StarRating value={myRating ?? 0} onChange={handleRate} />
+                </div>
+              )}
             </CardContent>
           </Card>
 

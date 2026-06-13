@@ -91,17 +91,17 @@ function AdminPage() {
     qc.invalidateQueries({ queryKey: ["admin-all-roles"] });
   };
 
-  const resolveReport = async (id: string, status: "resolved" | "dismissed") => {
-    await supabase.from("reports").update({ status }).eq("id", id);
-    toast.success("Report updated");
-    qc.invalidateQueries({ queryKey: ["admin-reports"] });
-  };
-
   const toggleRestrict = async (userId: string, restrict: boolean) => {
     const { error } = await supabase.from("profiles").update({ is_restricted: restrict }).eq("id", userId);
     if (error) return toast.error(error.message);
     toast.success(restrict ? "User restricted" : "Access restored");
     qc.invalidateQueries({ queryKey: ["admin-users"] });
+  };
+
+  const resolveReport = async (id: string, status: "resolved" | "dismissed") => {
+    await supabase.from("reports").update({ status }).eq("id", id);
+    toast.success("Report updated");
+    qc.invalidateQueries({ queryKey: ["admin-reports"] });
   };
 
   const getRoleFor = (uid: string) => allRoles?.find((r) => r.user_id === uid)?.role ?? "student";
@@ -200,7 +200,7 @@ function AdminPage() {
             <Card>
               <CardContent className="divide-y p-0">
                 {(users ?? []).map((u) => (
-                  <div key={u.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div key={u.id} className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">{u.full_name || "—"}</span>
@@ -208,7 +208,7 @@ function AdminPage() {
                       </div>
                       <div className="text-xs text-muted-foreground">{u.email}</div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center">
                       <Select value={getRoleFor(u.id)} onValueChange={(v) => setRole(u.id, v as never)}>
                         <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
                         <SelectContent>

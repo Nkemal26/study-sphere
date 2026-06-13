@@ -47,6 +47,7 @@ function UploadPage() {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -90,7 +91,7 @@ function UploadPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return toast.error("Attach a file to upload");
-    if (!user) return;
+    if (!user) return toast.error("You must be signed in to upload");
 
     const parsed = schema.safeParse(form);
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
@@ -99,17 +100,21 @@ function UploadPage() {
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+      // Step 1: Upload file to storage
       const { error: uploadErr } = await supabase.storage.from("notes").upload(path, file, {
         contentType: file.type,
         upsert: false,
       });
-      if (uploadErr) throw uploadErr;
+      if (uploadErr) {
+        throw new Error(`Storage error: ${uploadErr.message}. Make sure the 'notes' bucket exists and is public in your Supabase dashboard.`);
+      }
 
       const { data: urlData } = supabase.storage.from("notes").getPublicUrl(path);
-
       const tags = form.tags.split(",").map((t) => t.trim()).filter(Boolean);
 
-      const { data: note, error } = await supabase.from("notes").insert({
+      // Step 2: Insert note record into database
+      const { data: note, error: dbErr } = await supabase.from("notes").insert({
         title: parsed.data.title,
         description: parsed.data.description || null,
         file_path: path,
@@ -125,7 +130,12 @@ function UploadPage() {
         uploaded_by: user.id,
         status: "pending",
       }).select("id").single();
-      if (error) throw error;
+
+      if (dbErr) {
+        // Clean up the uploaded file if db insert fails
+        await supabase.storage.from("notes").remove([path]);
+        throw new Error(`Database error: ${dbErr.message}`);
+      }
 
       toast.success("Uploaded! Awaiting admin approval.");
       navigate({ to: "/notes/$id", params: { id: note.id } });
