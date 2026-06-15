@@ -123,20 +123,20 @@ function AdminPage() {
       </section>
 
       <div className="container mx-auto space-y-8 px-4 py-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { label: "Users", value: stats?.users ?? 0, icon: Users },
-            { label: "Notes", value: stats?.notes ?? 0, icon: FileText },
-            { label: "Downloads", value: stats?.downloads ?? 0, icon: FileText },
-            { label: "Pending review", value: stats?.pending ?? 0, icon: ShieldAlert },
+            { label: "Users", value: stats?.users ?? 0, icon: Users, accent: "text-sky-400" },
+            { label: "Notes", value: stats?.notes ?? 0, icon: FileText, accent: "text-emerald-400" },
+            { label: "Downloads", value: stats?.downloads ?? 0, icon: FileText, accent: "text-violet-400" },
+            { label: "Pending review", value: stats?.pending ?? 0, icon: ShieldAlert, accent: "text-amber-400" },
           ].map((s) => (
-            <Card key={s.label}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.label}</CardTitle>
-                <s.icon className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent><div className="font-display text-3xl font-bold">{s.value}</div></CardContent>
-            </Card>
+            <div key={s.label} className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-400">
+                <span>{s.label}</span>
+                <s.icon className={`h-3.5 w-3.5 ${s.accent}`} />
+              </div>
+              <div className="mt-1 font-display text-3xl font-bold tabular-nums">{s.value}</div>
+            </div>
           ))}
         </div>
 
