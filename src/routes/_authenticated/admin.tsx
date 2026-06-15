@@ -108,33 +108,35 @@ function AdminPage() {
 
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
       <Header />
 
-      <section className="bg-hero text-primary-foreground">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="flex items-center gap-2 font-display text-3xl font-bold md:text-4xl">
-            <ShieldAlert className="h-6 w-6" /> Admin dashboard
-          </h1>
-          <p className="mt-1 text-white/80">Moderate uploads, manage users and handle reports.</p>
+      <section className="relative border-b border-slate-800 bg-slate-950">
+        <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+        <div className="container relative mx-auto px-4 py-10">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">
+            <ShieldAlert className="h-3 w-3" /> Control panel · Admin
+          </div>
+          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">System administration</h1>
+          <p className="mt-1 text-sm text-slate-400">Moderate uploads, manage user access and resolve reports across NoteShare.</p>
         </div>
       </section>
 
       <div className="container mx-auto space-y-8 px-4 py-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { label: "Users", value: stats?.users ?? 0, icon: Users },
-            { label: "Notes", value: stats?.notes ?? 0, icon: FileText },
-            { label: "Downloads", value: stats?.downloads ?? 0, icon: FileText },
-            { label: "Pending review", value: stats?.pending ?? 0, icon: ShieldAlert },
+            { label: "Users", value: stats?.users ?? 0, icon: Users, accent: "text-sky-400" },
+            { label: "Notes", value: stats?.notes ?? 0, icon: FileText, accent: "text-emerald-400" },
+            { label: "Downloads", value: stats?.downloads ?? 0, icon: FileText, accent: "text-violet-400" },
+            { label: "Pending review", value: stats?.pending ?? 0, icon: ShieldAlert, accent: "text-amber-400" },
           ].map((s) => (
-            <Card key={s.label}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{s.label}</CardTitle>
-                <s.icon className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent><div className="font-display text-3xl font-bold">{s.value}</div></CardContent>
-            </Card>
+            <div key={s.label} className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-400">
+                <span>{s.label}</span>
+                <s.icon className={`h-3.5 w-3.5 ${s.accent}`} />
+              </div>
+              <div className="mt-1 font-display text-3xl font-bold tabular-nums">{s.value}</div>
+            </div>
           ))}
         </div>
 
