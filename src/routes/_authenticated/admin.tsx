@@ -108,15 +108,17 @@ function AdminPage() {
 
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
       <Header />
 
-      <section className="bg-hero text-primary-foreground">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="flex items-center gap-2 font-display text-3xl font-bold md:text-4xl">
-            <ShieldAlert className="h-6 w-6" /> Admin dashboard
-          </h1>
-          <p className="mt-1 text-white/80">Moderate uploads, manage users and handle reports.</p>
+      <section className="relative border-b border-slate-800 bg-slate-950">
+        <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+        <div className="container relative mx-auto px-4 py-10">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">
+            <ShieldAlert className="h-3 w-3" /> Control panel · Admin
+          </div>
+          <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">System administration</h1>
+          <p className="mt-1 text-sm text-slate-400">Moderate uploads, manage user access and resolve reports across NoteShare.</p>
         </div>
       </section>
 
